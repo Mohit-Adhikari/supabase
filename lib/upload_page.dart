@@ -13,6 +13,7 @@ class UploadPage extends StatefulWidget {
 
 class _UploadPageState extends State<UploadPage> {
   File? _imageFile;
+  bool _isUploading = false; // To track upload progress
 
   Future pickImage() async {
     final ImagePicker picker = ImagePicker();
@@ -26,9 +27,11 @@ class _UploadPageState extends State<UploadPage> {
   }
 
   Future uploadImage() async {
-    if (_imageFile == null) {
-      return;
-    }
+    if (_imageFile == null) return;
+
+    setState(() {
+      _isUploading = true; // Show loading indicator
+    });
 
     final fileName = 'mohit'; // Fixed file name
     final path = 'uploads/$fileName';
@@ -57,37 +60,114 @@ class _UploadPageState extends State<UploadPage> {
 
       // Show a snackbar to notify the user
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Image uploaded: $imageUrl')),
+        SnackBar(
+          content: Text('Image uploaded successfully!'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       // Handle errors (e.g., bucket not found, upload failed)
       print('Error uploading image: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error uploading image: $e')),
+        SnackBar(
+          content: Text('Error uploading image: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
+    } finally {
+      setState(() {
+        _isUploading = false; // Hide loading indicator
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Upload Images'),
+      appBar: AppBar(
+        title: const Text(
+          'Upload Images',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        body: Center(
+        centerTitle: true,
+        backgroundColor: Colors.blueAccent,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Display selected image or placeholder
               _imageFile == null
-                  ? const Text('No image selected.')
-                  : Image.file(_imageFile!),
+                  ? Column(
+                      children: [
+                        Icon(
+                          Icons.image,
+                          size: 100,
+                          color: Colors.grey[400],
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'No image selected.',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    )
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        _imageFile!,
+                        width: 200,
+                        height: 200,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+              SizedBox(height: 32),
+
+              // Select Image Button
               ElevatedButton(
-                  onPressed: pickImage, child: const Text('Select Image')),
-              ElevatedButton(
-                onPressed: uploadImage,
-                child: const Text('Upload Image'),
-              )
+                onPressed: _isUploading ? null : pickImage,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'Select Image',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
+              ),
+              SizedBox(height: 16),
+
+              // Upload Image Button with Progress Indicator
+              _isUploading
+                  ? CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                    )
+                  : ElevatedButton(
+                      onPressed: _imageFile == null || _isUploading ? null : uploadImage,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Upload Image',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                    ),
             ],
           ),
-        ));
+        ),
+      ),
+    );
   }
 }
