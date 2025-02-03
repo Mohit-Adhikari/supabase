@@ -26,39 +26,47 @@ class _UploadPageState extends State<UploadPage> {
   }
 
   Future uploadImage() async {
-  if (_imageFile == null) {
-    return;
+    if (_imageFile == null) {
+      return;
+    }
+
+    final fileName = 'mohit'; // Fixed file name
+    final path = 'uploads/$fileName';
+
+    try {
+      final storage = Supabase.instance.client.storage.from('image');
+
+      // Check if the file already exists
+      final existingFiles = await storage.list(path: 'uploads');
+      final fileExists = existingFiles.any((file) => file.name == fileName);
+
+      // If the file exists, delete it
+      if (fileExists) {
+        await storage.remove([path]);
+        print('Existing file deleted: $path');
+      }
+
+      // Upload the new image
+      await storage.upload(path, _imageFile!);
+
+      // Get the public URL
+      final imageUrl = storage.getPublicUrl(path);
+
+      // Print the URL to the console
+      print('Image URL: $imageUrl');
+
+      // Show a snackbar to notify the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Image uploaded: $imageUrl')),
+      );
+    } catch (e) {
+      // Handle errors (e.g., bucket not found, upload failed)
+      print('Error uploading image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error uploading image: $e')),
+      );
+    }
   }
-
-  final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-  final path = 'uploads/$fileName';
-
-  try {
-    // Upload the image to the correct bucket (`image`)
-    await Supabase.instance.client.storage
-        .from('image') // Use the correct bucket name
-        .upload(path, _imageFile!);
-
-    // Get the public URL
-    final imageUrl = Supabase.instance.client.storage
-        .from('image') // Use the correct bucket name
-        .getPublicUrl(path);
-
-    // Print the URL to the console
-    print('Image URL: $imageUrl');
-
-    // Show a snackbar to notify the user
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Image uploaded: $imageUrl')),
-    );
-  } catch (e) {
-    // Handle errors (e.g., bucket not found, upload failed)
-    print('Error uploading image: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error uploading image: $e')),
-    );
-  }
-}
 
   @override
   Widget build(BuildContext context) {
