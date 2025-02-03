@@ -26,17 +26,39 @@ class _UploadPageState extends State<UploadPage> {
   }
 
   Future uploadImage() async {
-    if (_imageFile == null) {
-      return;
-    }
-    final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-    final path = 'uploads/$fileName';
-    await Supabase.instance.client.storage
-        .from('images')
-        .upload(path, _imageFile!)
-        .then((value) => ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Image uploaded'))));
+  if (_imageFile == null) {
+    return;
   }
+
+  final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+  final path = 'uploads/$fileName';
+
+  try {
+    // Upload the image to the correct bucket (`image`)
+    await Supabase.instance.client.storage
+        .from('image') // Use the correct bucket name
+        .upload(path, _imageFile!);
+
+    // Get the public URL
+    final imageUrl = Supabase.instance.client.storage
+        .from('image') // Use the correct bucket name
+        .getPublicUrl(path);
+
+    // Print the URL to the console
+    print('Image URL: $imageUrl');
+
+    // Show a snackbar to notify the user
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Image uploaded: $imageUrl')),
+    );
+  } catch (e) {
+    // Handle errors (e.g., bucket not found, upload failed)
+    print('Error uploading image: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error uploading image: $e')),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
